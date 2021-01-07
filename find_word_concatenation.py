@@ -112,8 +112,8 @@ def generateData(size=100_000, pct_fluff=50, word_count=0):
     from random import randrange
     from pprint import pprint as prp
     from time import perf_counter as pc
-    word_list = []
     assert 0 < pct_fluff < 100
+    word_list = []
     for i in range(size):
         if randrange(0, 99) < pct_fluff:
             word_list.append(words[randrange(0, len(words) - 1)])
@@ -121,19 +121,20 @@ def generateData(size=100_000, pct_fluff=50, word_count=0):
             word_list.append(stuff[randrange(0, len(stuff) - 1)])
     full_string = "".join(word_list)
     word_count = max(word_count, len(words))
-    words_list = [words[i % len(words)] for i in range(word_count)]
+    pattern_list = [words[i % len(words)] for i in range(word_count)]
+    prp(pattern_list)
     tot_len = sum([len(word) for word in words])
     prev_result = None
     for f in [find_word_concatenation_jd1, find_word_concatenation_brute, find_word_concatenation_official]:
         start = pc()
-        found = find_word_concatenation_jd1(full_string, words)
+        found = f(full_string, pattern_list)
         duration = pc() - start
         if prev_result:
             assert prev_result == found
         prev_result = found
         found = [(i, full_string[i:i + tot_len]) for i in found]
         print(f'\n\n-------{f.__name__} completed in {duration:04f}-------')
-        # prp(found)
+        prp(found)
         print(len(found))
 
 
