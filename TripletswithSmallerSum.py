@@ -3,10 +3,15 @@ import math
 
 def triplet_with_smaller_sum(arr, target):
     """
+    Given an array arr of unsorted numbers and a target sum,
+    count all triplets in it such that arr[i] + arr[j] + arr[k] < target
+    where i, j, and k are three different indices.
+
+    Write a function to return the count of such triplets.
 
     :param arr:
     :param target:
-    :return:
+    :return: count of triplets with sum &lt target
 
     >>> triplet_with_smaller_sum([-1, 0, 2, 3], 3)
     2
