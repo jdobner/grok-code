@@ -59,12 +59,12 @@ class Solution:
         total = 0
         left_max, right_max = deque(), deque()
 
-        the_max = height[0]
+        the_max = 0
         for i in range(0, size - 2):
             the_max = max(the_max, height[i])
             left_max.appendleft(the_max)
 
-        the_max = height[size - 1]
+        the_max = 0
         for i in range(size - 1, 1, -1):
             the_max = max(the_max, height[i])
             right_max.append(the_max)
