@@ -1,60 +1,21 @@
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, deque
 from typing import List
 
-class GoalPosts(object):
 
-    def __init__(self):
-        self.left = None
-        self.right = None
-
-    def append(self, pos: int):
-        if not self.left:
-            self.left = pos
-        elif pos < self.left:
-            if self.right:
-                self.left = pos
-            else:
-                self.right, self.left = self.right, pos
+def p(*argv):
+    if False:
+        print(argv)
 
 
-class Solution1:
+class Solution2:
 
     def trap(self, height: List[int]) -> int:
         total = 0
-
-        def def_val():
-            return GoalPosts()
-
-        heights_struct = defaultdict(def_val)
-        for i, h in enumerate(height):
-            heights_struct[h].append(i)
-        heights_struct = OrderedDict(sorted(heights_struct))
-        oddball = None
-
-        for h, posts in heights_struct.items():
-            if oddball:
-                posts.append(oddball)
-                oddball = None
-            if not posts.right:
-                oddball = posts.left
-                continue
-            for i in range(posts.left + 1, posts.right + 1):
-                pass
-
-        return 0
-
-
-class Solution:
-
-    def trap(self, height: List[int]) -> int:
-        total = 0
-
-        def def_val():
-            return 0
-
-        heights_struct = defaultdict(def_val)
+        heights_struct = defaultdict(lambda: 0 )
         tallest = 0
+        index = 0
         for h in height:
+            index += 1
             for j in range(h + 1, tallest + 1):
                 heights_struct[j] += 1
             for j in range(min(tallest, h), 0, -1):
@@ -64,11 +25,59 @@ class Solution:
                 total += count
                 heights_struct[j] = 0
             tallest = max(tallest, h)
-            print(f"tallest={tallest}")
-        print("total=", total)
+            p(f"[{index} of {len(height)}] tallest={tallest}")
+        p("total=", total)
         return total
 
 
+
+class Solution1:
+
+    def trap(self, height: List[int]) -> int:
+        total = 0
+        tallest = 0
+
+        for i, h in enumerate(height):
+            for j in range(i - 1, -1, -1):
+                effective_height = min(h, tallest)
+                if height[j] >= effective_height:
+                    break
+                else:
+                    total += effective_height - height[j]
+                    height[j] = effective_height
+            tallest = max(tallest, h)
+        return total
+
+
+
+class Solution:
+
+    def trap(self, height: List[int]) -> int:
+        size = len(height)
+        if size == 0:
+            return 0
+        total = 0
+        left_max, right_max = deque(), deque()
+
+        the_max = height[0]
+        for i in range(0, size - 2):
+            the_max = max(the_max, height[i])
+            left_max.appendleft(the_max)
+
+        the_max = height[size - 1]
+        for i in range(size - 1, 1, -1):
+            the_max = max(the_max, height[i])
+            right_max.append(the_max)
+
+        # print(height)
+        # print(left_max)
+        # print(right_max)
+
+        for h in height[1:size - 1]:
+            # print(i, h, size, len(left_max), len(right_max))
+            wall_height = min(left_max.pop(), right_max.pop())
+            total += max(0, (wall_height - h))
+        return total
 
 def test():
     """
@@ -81,8 +90,13 @@ def test():
     6
     >>> Solution().trap([4,2,0,3,2,5])
     9
-
-
-    :return:
+    >>> Solution().trap([])
+    0
     """
-    return 0
+    import trapping_rain_water_data as d
+    result = Solution().trap(d.test_data)
+    print(result)
+
+
+if __name__ == "__main__":
+    test()
