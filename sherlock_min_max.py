@@ -12,6 +12,9 @@ test_data = "263044060 323471968 60083128 764550014 209332334 735326740 55868391
 
 test_arr = list(map(int, test_data.split()))
 
+
+from typing import List
+
 should_print = False
 
 from pprint import pprint as p
@@ -40,6 +43,10 @@ class CalcFurthest(object):
 
 def sherlockAndMinimax(arr: List[int], p: int, q: int) -> int:
     """
+    >>> sherlockAndMinimax([18, 22, 26, 46, 60, 64, 82, 106, 138, 194], 82, 182)
+    166
+    >>> sherlockAndMinimax([3, 24, 35, 6, 7, 45], 15, 20)
+    15
     >>> sherlockAndMinimax([5, 8, 14], 4, 9)
     4
     >>> "{:,}".format(sherlockAndMinimax(test_arr, 70_283_784, 302_962_359))
@@ -53,114 +60,58 @@ def sherlockAndMinimax(arr: List[int], p: int, q: int) -> int:
     """
     arr.sort()
     calc_furthest = CalcFurthest()
-    start_index = findClosest(arr, p)
+    start_index = get_closest_index(arr, p)
     distance = arr[start_index] - p
     calc_furthest(distance, p)
-    end_index = findClosest(arr, q)
+    end_index = get_closest_index(arr, q)
     distance = arr[end_index] - q
     calc_furthest(distance, q)
-    for index in range(start_index, end_index - 2):
+    pr(f'arr={arr}')
+    pr(f'start= {start_index} ({arr[start_index]}),  end={end_index} ({arr[end_index]}),  p={p}, q={q}')
+    for index in range(start_index, end_index):
         distance = (arr[index + 1] - arr[index]) // 2
         calc_furthest(distance, arr[index] + distance)
     return calc_furthest.m
 
 
-def sherlockAndMinimax2(arr: List[int], p: int, q: int) -> int:
-    """
-    >>> sherlockAndMinimax([1 , 5], 5, 6)
-    6
-    >>> "{:,}".format(sherlockAndMinimax(test_arr, 70_283_784, 302_962_359))
-    '173,959,056'
-    >>> sherlockAndMinimax([3,5,7,9], 6, 8)
-    6
-    >>> sherlockAndMinimax([5, 8, 14], 4, 9)
-    4
-    >>> sherlockAndMinimax([1], 0, 1)
-    0
-    """
-    arr.sort()
-    max_min = -1
-    best_m = None
-    start = findClosest(arr, p)
-    m = p
-    while m <= q:
-        prev = None
-        abs_prev = None
-
-        pr(f"m={m} abs_prev={abs_prev}")
-        for i in range(start, len(arr)):
-            diff = arr[i] - m
-            abs_diff = abs(diff)
-            if prev is None or abs_diff < abs_prev:
-                prev = diff
-                abs_prev = abs_diff
-                start = i
-            else:
-                break
-
-        if abs_prev > max_min:
-            max_min = abs_prev
-            best_m = m
-            pr(f"max={max_min:,}")
-        if prev > 0:
-            skip = prev * 2
-            pr("skipping ", skip)
-            m += skip
-        elif start + 1 < len(arr):
-            mid = (arr[start + 1] - arr[start]) // 2
-            m += mid
-        else:
-            m = max(q, m + 1)
-        pr(f"m={m} prev={prev}")
-    return best_m
-
-
-# Returns element closest to target in arr[]
-def findClosest(arr: List[int], target: int) -> int:
+def get_closest_index(arr, target):
     '''
-    >>> findClosest([3, 4, 8, 9], 1)
-    0
-    >>> findClosest([3, 4, 8, 9], 22)
+    >>> get_closest_index([3, 6, 7, 24, 35, 45], 20)
     3
-    >>> findClosest([1, 4, 8, 9], 6)
+    >>> get_closest_index([3, 6, 7, 24, 35, 45], 15)
+    2
+    >>> get_closest_index([3, 4, 8, 9], 1)
+    0
+    >>> get_closest_index([5, 8, 14], 9)
+    1
+    >>> get_closest_index([3, 4, 8, 9], 22)
+    3
+    >>> get_closest_index([1, 4, 8, 9], 6)
     1
     '''
-    # Corner cases
-
-    # Doing binary search
-    i = 0
-    j = len(arr)
     n = len(arr)
+    left = 0
+    right = n - 1
     mid = 0
-    while i < j:
-        mid = (i + j) // 2
 
-        if arr[mid] == target:
+    # edge case - last or above all
+    if target >= arr[n - 1]:
+        return n - 1
+    # edge case - first or below all
+    if target <= arr[0]:
+        return 0
+    # BSearch solution: Time & Space: Log(N)
+
+    while left < right:
+        mid = (left + right) // 2  # find the mid
+        if target < arr[mid]:
+            right = mid
+        elif target > arr[mid]:
+            left = mid + 1
+        else:
             return mid
 
-        # If target is less than array
-        # element, then search in left
-        if target < arr[mid]:
+    mid1 = mid if target > arr[mid] else mid - 1
+    mid2 = mid1 + 1
+    return mid2 if target - arr[mid1] >= arr[mid2] - target else mid1
 
-            # If target is greater than previous
-            # to mid, return closest of two
-            if mid > 0 and target > arr[mid - 1]:
-                return getClosest(mid - 1, target, arr)
-
-            # Repeat for left half
-            j = mid
-
-        # If target is greater than mid
-        else:
-            if mid < n - 1 and target < arr[mid + 1]:
-                return getClosest(mid, target, arr)
-
-            # update i
-            i = mid + 1
-
-    # Only single element left after search
-    return mid
-
-
-def getClosest(index: int, target: int, arr: List[int]) -> int:
-    return index if target - arr[index] >= arr[index + 1] - target else index + 1
