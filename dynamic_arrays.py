@@ -3,6 +3,7 @@ from typing import List
 
 test_numbers = [0]
 
+
 def load_from_files():
     test_arr = []
     for t in test_numbers:
@@ -23,8 +24,8 @@ def load_from_files():
     return test_arr
 
 
-
 tests = load_from_files()
+
 
 def dynamicArray(n: int, queries: List[List[int]]):
     """
