@@ -1,17 +1,167 @@
-from collections import defaultdict, deque
+from collections import defaultdict, deque, namedtuple
 from typing import List
+from pprint import pprint
+
+
+should_print = True
 
 
 def p(*argv):
-    if False:
-        print(argv)
+    if should_print:
+        print(*argv)
+
+
+def pp(*arg):
+    if should_print:
+        pprint(*arg)
+
+
+class Slot:
+    def __init__(self, height, effective_height):
+        self.height = height
+        self.effective_height = effective_height
+
+    def __str__(self):
+        return f"[{self.height}, {self.effective_height}]"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+Point = namedtuple('Point', ['x', 'y'])
+
+
+class Solution:
+    magic_height = 2001
+
+    def __init__(self):
+        self.hm = []
+        self.trapped = 0
+        self.len_x = 0
+        self.len_y = 0
+
+    def mapper(self, x, y, v):
+        return Slot(v, None if 0 < x < self.len_y - 1 and 0 < y < self.len_x - 1 else v)
+
+    def trapRainWater(self, heightMap: List[List[int]]) -> int:
+        self.len_y = len(heightMap)
+        self.len_x = len(heightMap[0])
+
+        for y_pos, a in enumerate(heightMap):
+            arr = [self.mapper(y_pos, n, k) for n, k in enumerate(a)]
+            self.hm.append(arr)
+
+        total = 0
+        for y_pos in range(1, self.len_y - 1):
+            for x_pos in range(1, self.len_x - 1):
+                slot = self.calculate(Point(x_pos, y_pos))
+                total += slot.effective_height - slot.height
+
+        return total
+
+    def get_slot(self, x: int, y: int) -> Slot:
+        return self.hm[y][x]
+
+    def calculate(self, point: Point) -> Slot:
+        p(f'calculate({point})')
+        visited = set()
+        s = self.get_slot(*point)
+        depth = 0
+
+        def calc(pt: Point) -> int:
+            nonlocal depth
+            depth += 1
+            print(f'{depth}:  calc({pt})')
+            visited.add(pt)
+            slot = self.get_slot(*pt)
+            if slot.effective_height:
+                return slot.effective_height
+            x1, y1 = pt
+            around_me = (Point(x1 - 1, y1),
+                         Point(x1, y1 - 1),
+                         Point(x1 + 1, y1),
+                         Point(x1, y1 + 1))
+            around_me = [it for it in around_me if it not in visited]
+            p(f'{depth}: {pt}.around_me={around_me}')
+            if not around_me:
+                return slot.height
+            effective_height = min(map(lambda d: calc(d), around_me))
+            effective_height = max(effective_height, slot.height)
+            return effective_height
+
+        s.effective_height = calc(point)
+        pp(self.hm)
+        return s
+
+
+class Solution2:
+    magic_height = 2001
+
+    def __init__(self):
+        self.hm = []
+        self.trapped = 0
+        self.len_x = 0
+        self.len_y = 0
+
+    def mapper(self, x, y, v):
+        return Slot(v, None if 0 < x < self.len_y - 1 and 0 < y < self.len_x - 1 else v)
+
+    def trapRainWater(self, heightMap: List[List[int]]) -> int:
+        self.len_y = len(heightMap)
+        self.len_x = len(heightMap[0])
+
+        for y_pos, a in enumerate(heightMap):
+            arr = [self.mapper(y_pos, n, k) for n, k in enumerate(a)]
+            self.hm.append(arr)
+
+        total = 0
+        for y_pos in range(1, self.len_y - 1):
+            for x_pos in range(1, self.len_x - 1):
+                slot = self.calculate(Point(x_pos, y_pos))
+                total += slot.effective_height - slot.height
+
+        return total
+
+    def get_slot(self, x: int, y: int) -> Slot:
+        return self.hm[y][x]
+
+    def calculate(self, point: Point) -> Slot:
+        p(f'calculate({point})')
+        visited = set()
+        s = self.get_slot(*point)
+        depth = 0
+
+        def calc(pt: Point) -> int:
+            nonlocal depth
+            depth += 1
+            print(f'{depth}:  calc({pt})')
+            visited.add(pt)
+            slot = self.get_slot(*pt)
+            if slot.effective_height:
+                return slot.effective_height
+            x1, y1 = pt
+            around_me = (Point(x1 - 1, y1),
+                         Point(x1, y1 - 1),
+                         Point(x1 + 1, y1),
+                         Point(x1, y1 + 1))
+            around_me = [it for it in around_me if it not in visited]
+            p(f'{depth}: {pt}.around_me={around_me}')
+            if not around_me:
+                return slot.height
+            effective_height = min(map(lambda d: calc(d), around_me))
+            effective_height = max(effective_height, slot.height)
+            return effective_height
+
+        s.effective_height = calc(point)
+        pp(self.hm)
+        return s
 
 
 class Solution2:
 
     def trap(self, height: List[int]) -> int:
         total = 0
-        heights_struct = defaultdict(lambda: 0 )
+        heights_struct = defaultdict(lambda: 0)
         tallest = 0
         index = 0
         for h in height:
@@ -28,7 +178,6 @@ class Solution2:
             p(f"[{index} of {len(height)}] tallest={tallest}")
         p("total=", total)
         return total
-
 
 
 class Solution1:
@@ -49,8 +198,7 @@ class Solution1:
         return total
 
 
-
-class Solution:
+class Solution3:
 
     def trap(self, height: List[int]) -> int:
         size = len(height)
@@ -79,6 +227,7 @@ class Solution:
             total += max(0, (wall_height - h))
         return total
 
+
 def test():
     """
     Given n non-negative integers representing an elevation map where the width of each bar is 1,
@@ -86,11 +235,11 @@ def test():
 
     see https://leetcode.com/problems/trapping-rain-water/
 
-    >>> Solution().trap([0,1,0,2,1,0,1,3,2,1,2,1])
-    6
-    >>> Solution().trap([4,2,0,3,2,5])
+    >>> Solution().trapRainWater([[1,4,3,1,3,2],[3,2,1,3,2,4],[2,3,3,2,3,1]])
+    4
+    >>> Solution().trapRainWater([4,2,0,3,2,5])
     9
-    >>> Solution().trap([])
+    >>> Solution().trapRainWater([])
     0
     """
     import trapping_rain_water_data as d
@@ -99,4 +248,14 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    # test()
+    # r = Solution().trapRainWater([[1,4,3,1,3,2],[3,2,1,3,2,4],[2,3,3,2,3,1]])
+    # assert r == 4, f'expected {r} == 4'
+    # data = [[12,13,1,12],[13,4,13,12],[13,8,10,12],[12,13,12,12],[13,13,13,13]]
+    # r = Solution().trapRainWater(data)
+    # pp(r)
+
+    data = [[12,13,1,12],[13,4,13,12],[13,8,10,12],[12,13,12,12],[13,13,13,13]]
+    pp(data)
+    r = Solution().trapRainWater(data)
+    assert r == 14, f'expected 14, received {r}'
