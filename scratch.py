@@ -5,7 +5,8 @@ import typing
 
 test_data = [[12, 13, 1, 12], [13, 4, 13, 12], [13, 8, 10, 12], [12, 13, 12, 12], [13, 13, 13, 13]]
 test_data_2 = [[9,9,9,9,9,9],[9,2,1,1,2,9],[9,2,8,8,2,9],[9,2,3,3,2,9],[9,9,9,9,9,9]]
-pr = True
+test_data_3 = [[9,9,9,9,9,9,8,9,9,9,9],[9,0,0,0,0,0,1,0,0,0,9],[9,0,0,0,0,0,0,0,0,0,9],[9,0,0,0,0,0,0,0,0,0,9],[9,9,9,9,9,9,9,9,9,9,9]]
+pr = False
 
 def printif(*args):
     if pr:
@@ -14,17 +15,16 @@ def printif(*args):
 class Solution:
 
     def __init__(self, data=None):
-        self.data = [[]] if data is None else data
+        self.data = [[0]] if data is None else data
 
     def get(self, x, y) -> int:
+        assert x >= 0
+        assert y >= 0
         return self.data[y][x]
 
     def get_unvisited_adjacent(self, x1, y1, visited, hi) -> List[Tuple[int, int]]:
-        around_me = ((x1 - 1, y1),
-                     (x1, y1 - 1),
-                     (x1 + 1, y1),
-                     (x1, y1 + 1))
-        return [r for r in around_me if visited[r] > hi]
+        around_me = [(x1 - 1, y1), (x1, y1 - 1), (x1 + 1, y1), (x1, y1 + 1)]
+        return [n for n in around_me if n not in visited]
 
     def trapRainWater(self, heightMap: List[List[int]]) -> int:
         '''
@@ -62,28 +62,33 @@ class Solution:
 
     def search(self, x, y, visited=None, hi=0) -> (int, List[int]):
         if visited is None:
-            visited = defaultdict(lambda: 10_000)
+            visited = set()
 
         my_height = self.get(x, y)
         hi = max(hi, my_height)
-        visited[(x, y)] = hi
+        visited.add((x, y))
 
         self.print_d(x, y, visited)
-        adj = self.get_unvisited_adjacent(x, y, visited, hi)
-        printif(x, y, " -> ", adj)
+        adj = None
+        if self.not_edge(x, y):
+            adj = self.get_unvisited_adjacent(x, y, visited, hi)
+            printif(x, y, " -> ", adj)
+            rv = 10_000
+        else:
+            rv = my_height
 
-        if self.not_edge(x, y) and adj:
+        my_chain = [(my_height, x, y)]
+        if adj:
             low = 20000
-            the_chain = []
+            low_chain = None
             for next_x, next_y in adj:
-                cap, chain = self.search(next_x, next_y, visited, hi)
+                cap, chain = self.search(next_x, next_y, visited.copy(), hi)
                 if cap < low:
                     low = cap
-                    the_chain = chain
-            the_chain.insert(0, (x, y))
-            return max(my_height, low), the_chain
-        else:
-            return my_height, [(x, y)]
+                    low_chain = chain
+            my_chain.append(low_chain)
+            rv = max(my_height, low)
+        return rv, my_chain
 
     def print_d(self, x: int, y: int, visited):
         if not pr:
@@ -93,8 +98,7 @@ class Solution:
         def _map(arg):
             _x, _v = arg
             s = "*" if _x == x and _y == y else " "
-            i = visited[arg]
-            s2 = "  " if i == 10_000 else f"x{i}"
+            s2 = "x" if arg in visited else " "
             return f"{s}{_v}{s2}"
 
         for _y, a in enumerate(self.data):
@@ -106,18 +110,20 @@ class Solution:
 # print(f'volume = {v}')
 
 
-def test():
+def test(data=test_data_3):
     rv = Solution().trapRainWater(test_data_2)
     print(f'---- rv={rv}')
-    for a in test_data_2[1:-1]:
+    for a in data[1:-1]:
         the_list = list(map(lambda x: 9 - x, a[1:-1]))
         print("  ", the_list, "=", sum(the_list))
     print()
-    for a in test_data_2:
+    for a in data:
         print(a)
+    return rv
 
 # test()
 
 
 def se(x, y):
     return Solution(test_data_2).search(x,y)
+
