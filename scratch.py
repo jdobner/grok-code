@@ -16,11 +16,19 @@ class Solution:
 
     def __init__(self, data=None):
         self.data = [[0]] if data is None else data
+        self.cache = [[0]]
+        self.cache_hits = 0
 
     def get(self, x, y) -> int:
         assert x >= 0
         assert y >= 0
         return self.data[y][x]
+
+    def ge_from_cache(self, x, y) -> int:
+        assert x >= 0
+        assert y >= 0
+        self.cache_hits += 1
+        return self.cache[y][x]
 
     def get_unvisited_adjacent(self, x1, y1, visited, hi) -> List[Tuple[int, int]]:
         around_me = [(x1 - 1, y1), (x1, y1 - 1), (x1 + 1, y1), (x1, y1 + 1)]
@@ -31,9 +39,13 @@ class Solution:
         >>> Solution().trapRainWater(test_data)
         14
         >>> Solution().trapRainWater(test_data_2)
-        57
+        72
         '''
         self.data = heightMap
+        self.cache = []
+        for y, a in enumerate(self.data):
+            a2 = [-1 if self.not_edge(x, y) else v for x, v in enumerate(a)]
+            self.cache.append(a2)
         total = 0
         s = []
         grid = []
@@ -53,6 +65,7 @@ class Solution:
         for line in grid:
             printif("  ", line, "=", sum(line))
 
+        printif(f"cache_hits={self.cache_hits}")
         return total
 
     def not_edge(self, x, y):
@@ -62,7 +75,13 @@ class Solution:
 
     def search(self, x, y, visited=None, hi=0) -> (int, List[int]):
         if visited is None:
-            visited = set()
+            v = self.search(x, y, set())
+            self.cache[y][x] = v[0]
+            return v
+
+        cached = self.ge_from_cache(x, y)
+        if cached > -1:
+            return cached, []
 
         my_height = self.get(x, y)
         hi = max(hi, my_height)
