@@ -15,7 +15,7 @@ jobs:
           command: mkdir -p ./test-results && ls -ltr
           name: create test dir
       - run:
-          command: python -m pytest trapping_rain_water.py
+          command:  python -m pytest --junitxml=./test-results/junit.xml trapping_rain_water.py
           name: Test
       - store_test_results:
           path: ./test-results
