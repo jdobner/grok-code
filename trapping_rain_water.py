@@ -146,6 +146,7 @@ def test_1(f_data1):
     assert rv == 15
 
 
+
 def se(x, y):
     return Solution(test_data_2).search(x,y)
 
