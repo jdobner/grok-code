@@ -1,261 +1,148 @@
-from collections import defaultdict, deque, namedtuple
-from typing import List
-from pprint import pprint
+from collections import defaultdict
+from re import search
+from typing import Tuple, List, Set
+import typing
 
+test_data = [[12, 13, 1, 12], [13, 4, 13, 12], [13, 8, 10, 12], [12, 13, 12, 12], [13, 13, 13, 13]]
+test_data_2 = [[9,9,9,9,9,9],[9,2,1,1,2,9],[9,2,8,8,2,9],[9,2,3,3,2,9],[9,9,9,9,9,9]]
+test_data_3 = [[9,9,9,9,9,9,8,9,9,9,9],[9,0,0,0,0,0,1,0,0,0,9],[9,0,0,0,0,0,0,0,0,0,9],[9,0,0,0,0,0,0,0,0,0,9],[9,9,9,9,9,9,9,9,9,9,9]]
+pr = False
 
-should_print = True
-
-
-def p(*argv):
-    if should_print:
-        print(*argv)
-
-
-def pp(*arg):
-    if should_print:
-        pprint(*arg)
-
-
-class Slot:
-    def __init__(self, height, effective_height):
-        self.height = height
-        self.effective_height = effective_height
-
-    def __str__(self):
-        return f"[{self.height}, {self.effective_height}]"
-
-    def __repr__(self):
-        return self.__str__()
-
-
-Point = namedtuple('Point', ['x', 'y'])
-
+def printif(*args):
+    if pr:
+        print(*args)
 
 class Solution:
-    magic_height = 2001
 
-    def __init__(self):
-        self.hm = []
-        self.trapped = 0
-        self.len_x = 0
-        self.len_y = 0
+    def __init__(self, data=None):
+        self.data = [[0]] if data is None else data
+        self.cache = [[0]]
+        self.cache_hits = 0
 
-    def mapper(self, x, y, v):
-        return Slot(v, None if 0 < x < self.len_y - 1 and 0 < y < self.len_x - 1 else v)
+    def get(self, x, y) -> int:
+        assert x >= 0
+        assert y >= 0
+        return self.data[y][x]
 
-    def trapRainWater(self, heightMap: List[List[int]]) -> int:
-        self.len_y = len(heightMap)
-        self.len_x = len(heightMap[0])
+    def ge_from_cache(self, x, y) -> int:
+        assert x >= 0
+        assert y >= 0
+        self.cache_hits += 1
+        return self.cache[y][x]
 
-        for y_pos, a in enumerate(heightMap):
-            arr = [self.mapper(y_pos, n, k) for n, k in enumerate(a)]
-            self.hm.append(arr)
-
-        total = 0
-        for y_pos in range(1, self.len_y - 1):
-            for x_pos in range(1, self.len_x - 1):
-                slot = self.calculate(Point(x_pos, y_pos))
-                total += slot.effective_height - slot.height
-
-        return total
-
-    def get_slot(self, x: int, y: int) -> Slot:
-        return self.hm[y][x]
-
-    def calculate(self, point: Point) -> Slot:
-        p(f'calculate({point})')
-        visited = set()
-        s = self.get_slot(*point)
-        depth = 0
-
-        def calc(pt: Point) -> int:
-            nonlocal depth
-            depth += 1
-            print(f'{depth}:  calc({pt})')
-            visited.add(pt)
-            slot = self.get_slot(*pt)
-            if slot.effective_height:
-                return slot.effective_height
-            x1, y1 = pt
-            around_me = (Point(x1 - 1, y1),
-                         Point(x1, y1 - 1),
-                         Point(x1 + 1, y1),
-                         Point(x1, y1 + 1))
-            around_me = [it for it in around_me if it not in visited]
-            p(f'{depth}: {pt}.around_me={around_me}')
-            if not around_me:
-                return slot.height
-            effective_height = min(map(lambda d: calc(d), around_me))
-            effective_height = max(effective_height, slot.height)
-            return effective_height
-
-        s.effective_height = calc(point)
-        pp(self.hm)
-        return s
-
-
-class Solution2:
-    magic_height = 2001
-
-    def __init__(self):
-        self.hm = []
-        self.trapped = 0
-        self.len_x = 0
-        self.len_y = 0
-
-    def mapper(self, x, y, v):
-        return Slot(v, None if 0 < x < self.len_y - 1 and 0 < y < self.len_x - 1 else v)
+    def get_unvisited_adjacent(self, x1, y1, visited, hi) -> List[Tuple[int, int]]:
+        around_me = [(x1 - 1, y1), (x1, y1 - 1), (x1 + 1, y1), (x1, y1 + 1)]
+        return [n for n in around_me if n not in visited]
 
     def trapRainWater(self, heightMap: List[List[int]]) -> int:
-        self.len_y = len(heightMap)
-        self.len_x = len(heightMap[0])
-
-        for y_pos, a in enumerate(heightMap):
-            arr = [self.mapper(y_pos, n, k) for n, k in enumerate(a)]
-            self.hm.append(arr)
-
+        '''
+        >>> Solution().trapRainWater(test_data)
+        14
+        >>> Solution().trapRainWater(test_data_2)
+        72
+        '''
+        self.data = heightMap
+        self.cache = []
+        for y, a in enumerate(self.data):
+            a2 = [-1 if self.not_edge(x, y) else v for x, v in enumerate(a)]
+            self.cache.append(a2)
         total = 0
-        for y_pos in range(1, self.len_y - 1):
-            for x_pos in range(1, self.len_x - 1):
-                slot = self.calculate(Point(x_pos, y_pos))
-                total += slot.effective_height - slot.height
+        s = []
+        grid = []
+        for y in range(1, len(self.data) - 1):
+            line = []
+            for x in range(1, len(self.data[0]) - 1):
+                capacity, chain = self.search(x, y)
+                capacity -= self.get(x, y)
+                line.append(capacity)
+                assert capacity >= 0
+                if capacity > 0:
+                    s.append(f'capacity({x}, {y}) = {capacity}, chain={chain}')
+                total += capacity
+            grid.append(line)
+        for t in s:
+            printif(t)
+        for line in grid:
+            printif("  ", line, "=", sum(line))
 
+        printif(f"cache_hits={self.cache_hits}")
         return total
 
-    def get_slot(self, x: int, y: int) -> Slot:
-        return self.hm[y][x]
+    def not_edge(self, x, y):
+        rv = 0 < x < len(self.data[0]) - 1 and 0 < y < len(self.data) - 1
+        printif((x,y), "NOT EDGE" if rv else "EDGE")
+        return rv
 
-    def calculate(self, point: Point) -> Slot:
-        p(f'calculate({point})')
-        visited = set()
-        s = self.get_slot(*point)
-        depth = 0
+    def search(self, x, y, visited=None, hi=0) -> (int, List[int]):
+        if visited is None:
+            v = self.search(x, y, set())
+            self.cache[y][x] = v[0]
+            return v
 
-        def calc(pt: Point) -> int:
-            nonlocal depth
-            depth += 1
-            print(f'{depth}:  calc({pt})')
-            visited.add(pt)
-            slot = self.get_slot(*pt)
-            if slot.effective_height:
-                return slot.effective_height
-            x1, y1 = pt
-            around_me = (Point(x1 - 1, y1),
-                         Point(x1, y1 - 1),
-                         Point(x1 + 1, y1),
-                         Point(x1, y1 + 1))
-            around_me = [it for it in around_me if it not in visited]
-            p(f'{depth}: {pt}.around_me={around_me}')
-            if not around_me:
-                return slot.height
-            effective_height = min(map(lambda d: calc(d), around_me))
-            effective_height = max(effective_height, slot.height)
-            return effective_height
+        cached = self.ge_from_cache(x, y)
+        if cached > -1:
+            return cached, []
 
-        s.effective_height = calc(point)
-        pp(self.hm)
-        return s
+        my_height = self.get(x, y)
+        hi = max(hi, my_height)
+        visited.add((x, y))
 
+        self.print_d(x, y, visited)
+        adj = None
+        if self.not_edge(x, y):
+            adj = self.get_unvisited_adjacent(x, y, visited, hi)
+            printif(x, y, " -> ", adj)
+            rv = 10_000
+        else:
+            rv = my_height
 
-class Solution2:
+        my_chain = [(my_height, x, y)]
+        if adj:
+            low = 20000
+            low_chain = None
+            for next_x, next_y in adj:
+                cap, chain = self.search(next_x, next_y, visited.copy(), hi)
+                if cap < low:
+                    low = cap
+                    low_chain = chain
+            my_chain.append(low_chain)
+            rv = max(my_height, low)
+        return rv, my_chain
 
-    def trap(self, height: List[int]) -> int:
-        total = 0
-        heights_struct = defaultdict(lambda: 0)
-        tallest = 0
-        index = 0
-        for h in height:
-            index += 1
-            for j in range(h + 1, tallest + 1):
-                heights_struct[j] += 1
-            for j in range(min(tallest, h), 0, -1):
-                count = heights_struct[j]
-                if count == 0:
-                    break
-                total += count
-                heights_struct[j] = 0
-            tallest = max(tallest, h)
-            p(f"[{index} of {len(height)}] tallest={tallest}")
-        p("total=", total)
-        return total
+    def print_d(self, x: int, y: int, visited):
+        if not pr:
+            return
+        print(f'adj to ({x}, {y}):')
 
+        def _map(arg):
+            _x, _v = arg
+            s = "*" if _x == x and _y == y else " "
+            s2 = "x" if arg in visited else " "
+            return f"{s}{_v}{s2}"
 
-class Solution1:
-
-    def trap(self, height: List[int]) -> int:
-        total = 0
-        tallest = 0
-
-        for i, h in enumerate(height):
-            for j in range(i - 1, -1, -1):
-                effective_height = min(h, tallest)
-                if height[j] >= effective_height:
-                    break
-                else:
-                    total += effective_height - height[j]
-                    height[j] = effective_height
-            tallest = max(tallest, h)
-        return total
+        for _y, a in enumerate(self.data):
+            print(list(map(_map, enumerate(a))))
+        print("\n")
 
 
-class Solution3:
-
-    def trap(self, height: List[int]) -> int:
-        size = len(height)
-        if size == 0:
-            return 0
-        total = 0
-        left_max, right_max = deque(), deque()
-
-        the_max = 0
-        for i in range(0, size - 2):
-            the_max = max(the_max, height[i])
-            left_max.appendleft(the_max)
-
-        the_max = 0
-        for i in range(size - 1, 1, -1):
-            the_max = max(the_max, height[i])
-            right_max.append(the_max)
-
-        # print(height)
-        # print(left_max)
-        # print(right_max)
-
-        for h in height[1:size - 1]:
-            # print(i, h, size, len(left_max), len(right_max))
-            wall_height = min(left_max.pop(), right_max.pop())
-            total += max(0, (wall_height - h))
-        return total
+# v = get_volume()
+# print(f'volume = {v}')
 
 
-def test():
-    """
-    Given n non-negative integers representing an elevation map where the width of each bar is 1,
-    compute how much water it can trap after raining.
+def test(data=test_data_3):
+    rv = Solution().trapRainWater(test_data_2)
+    print(f'---- rv={rv}')
+    for a in data[1:-1]:
+        the_list = list(map(lambda x: 9 - x, a[1:-1]))
+        print("  ", the_list, "=", sum(the_list))
+    print()
+    for a in data:
+        print(a)
+    return rv
 
-    see https://leetcode.com/problems/trapping-rain-water/
-
-    >>> Solution().trapRainWater([[1,4,3,1,3,2],[3,2,1,3,2,4],[2,3,3,2,3,1]])
-    4
-    >>> Solution().trapRainWater([4,2,0,3,2,5])
-    9
-    >>> Solution().trapRainWater([])
-    0
-    """
-    import trapping_rain_water_data as d
-    result = Solution().trap(d.test_data)
-    print(result)
+# test()
 
 
-if __name__ == "__main__":
-    # test()
-    # r = Solution().trapRainWater([[1,4,3,1,3,2],[3,2,1,3,2,4],[2,3,3,2,3,1]])
-    # assert r == 4, f'expected {r} == 4'
-    # data = [[12,13,1,12],[13,4,13,12],[13,8,10,12],[12,13,12,12],[13,13,13,13]]
-    # r = Solution().trapRainWater(data)
-    # pp(r)
+def se(x, y):
+    return Solution(test_data_2).search(x,y)
 
-    data = [[12,13,1,12],[13,4,13,12],[13,8,10,12],[12,13,12,12],[13,13,13,13]]
-    pp(data)
-    r = Solution().trapRainWater(data)
-    assert r == 14, f'expected 14, received {r}'
