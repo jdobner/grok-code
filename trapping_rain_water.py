@@ -143,8 +143,7 @@ def t1(data=test_data_3):
 
 def test_1(f_data1):
     rv = Solution().trapRainWater(f_data1)
-    assert rv == 15
-
+    assert rv == 14
 
 
 def se(x, y):
