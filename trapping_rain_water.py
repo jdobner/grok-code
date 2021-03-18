@@ -129,7 +129,7 @@ class Solution:
 # print(f'volume = {v}')
 
 
-def test(data=test_data_3):
+def t1(data=test_data_3):
     rv = Solution().trapRainWater(test_data_2)
     print(f'---- rv={rv}')
     for a in data[1:-1]:
@@ -140,7 +140,10 @@ def test(data=test_data_3):
         print(a)
     return rv
 
-# test()
+
+def test_1(f_data1):
+    rv = Solution().trapRainWater(f_data1)
+    assert rv == 15
 
 
 def se(x, y):
