@@ -12,7 +12,7 @@ jobs:
       - python/install-deps
       - python/save-cache
       - run:
-          command: mkdir -p ./test-results
+          command: mkdir -p ./test-results && ls -ltr
           name: create test dir
       - run:
           command: pytest trapping_rain_water.py
