@@ -28,5 +28,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Test
         run: |
+          pip install pytest
+          python -V
           mkdir -p test-results
           python -m pytest --junitxml=test-results/junit.xml trapping_rain_water.py
