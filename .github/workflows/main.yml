@@ -32,3 +32,8 @@ jobs:
           python -V
           mkdir -p test-results
           python -m pytest --junitxml=test-results/junit.xml trapping_rain_water.py
+  test-results:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Publish Unit Test Results
+    - uses: EnricoMi/publish-unit-test-result-action@v1.10
