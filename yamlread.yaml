@@ -1,0 +1,12 @@
+map1:
+  simple-array1:
+    - one
+    - two
+    - three
+map2:
+  complex-array1:
+    - kv1: hi
+      kv2: there
+      complex:
+        c-k1: one
+        c-k2: two
